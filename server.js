@@ -2,495 +2,341 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
-
-const PORT =
-  process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors({
-  origin:"*",
-  methods:["GET","POST","OPTIONS"],
-  allowedHeaders:[
-    "Content-Type",
-    "Authorization"
-  ]
+  origin: "*",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-app.use(
-  express.json({
-    limit:"1mb"
-  })
-);
+app.use(express.json({ limit: "1mb" }));
 
 
-/* ========================================
-   XOD SYSTEM
-======================================== */
+/* =====================================================
+   XOD // AGENTE ÉLITE
+   BACKEND v4.0 — MODO $0
+===================================================== */
 
 const SYSTEM = {
-
-  name:
-    "XOD // AGENTE ÉLITE",
-
-  version:
-    "3.0",
-
-  status:
-    "OPERATIVO"
-
+  name: "XOD // AGENTE ÉLITE",
+  version: "4.0",
+  status: "OPERATIVO",
+  mode: "ZERO_COST"
 };
 
 
-/* ========================================
+/* =====================================================
    ROOT
-======================================== */
+===================================================== */
 
-app.get("/",(req,res)=>{
+app.get("/", (req, res) => {
 
   res.json({
-
-    ok:true,
-
-    system:
-      SYSTEM.name,
-
-    version:
-      SYSTEM.version,
-
-    status:
-      SYSTEM.status,
-
-    endpoint:
-      "/xod/chat"
-
+    ok: true,
+    system: SYSTEM.name,
+    version: SYSTEM.version,
+    status: SYSTEM.status,
+    mode: SYSTEM.mode,
+    endpoint: "/xod/chat",
+    health: "/health"
   });
 
 });
 
 
-/* ========================================
+/* =====================================================
    HEALTH
-======================================== */
+===================================================== */
 
-app.get(
-  "/health",
-  (req,res)=>{
+app.get("/health", (req, res) => {
 
-    res.json({
+  res.json({
+    ok: true,
+    system: SYSTEM.name,
+    version: SYSTEM.version,
+    status: "online",
+    mode: "ZERO_COST",
+    timestamp: new Date().toISOString()
+  });
 
-      ok:true,
+});
 
-      status:
-        "online",
 
-      timestamp:
-        new Date()
-        .toISOString()
+/* =====================================================
+   NORMALIZADOR
+===================================================== */
 
+function normalize(text = "") {
+
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+}
+
+
+/* =====================================================
+   MOTOR LOCAL XOD
+===================================================== */
+
+function localCommand(message) {
+
+  const text = normalize(message);
+
+
+  // HORA
+
+  if (
+    text.includes("que hora") ||
+    text === "hora"
+  ) {
+
+    return {
+      type: "command",
+      reply:
+        "La hora del servidor XOD es " +
+        new Date().toLocaleTimeString("es-AR")
+    };
+
+  }
+
+
+  // FECHA
+
+  if (
+    text.includes("que fecha") ||
+    text.includes("que dia es")
+  ) {
+
+    return {
+      type: "command",
+      reply:
+        "La fecha del servidor XOD es " +
+        new Date().toLocaleDateString("es-AR")
+    };
+
+  }
+
+
+  // ESTADO
+
+  if (
+    text.includes("estado del sistema") ||
+    text.includes("estado de xod") ||
+    text.includes("diagnostico")
+  ) {
+
+    return {
+      type: "system",
+      reply:
+        "XOD // AGENTE ÉLITE v4.0 operativo. " +
+        "Backend conectado. Modo $0 activo. " +
+        "Motor local disponible."
+    };
+
+  }
+
+
+  // IDENTIDAD
+
+  if (
+    text.includes("quien sos") ||
+    text.includes("quien eres") ||
+    text.includes("que sos")
+  ) {
+
+    return {
+      type: "identity",
+      reply:
+        "Soy XOD // AGENTE ÉLITE. " +
+        "Estoy funcionando mediante el backend XOD v4.0 " +
+        "en modo ZERO_COST."
+    };
+
+  }
+
+
+  // AYUDA
+
+  if (
+    text === "ayuda" ||
+    text.includes("que podes hacer") ||
+    text.includes("que puedes hacer")
+  ) {
+
+    return {
+      type: "help",
+      reply:
+        "Puedo ejecutar comandos locales, informar mi estado, " +
+        "procesar instrucciones básicas y actuar como núcleo " +
+        "del sistema XOD. El motor de lenguaje externo se encuentra " +
+        "desacoplado para mantener el sistema en modo $0."
+    };
+
+  }
+
+
+  return null;
+
+}
+
+
+/* =====================================================
+   PLANIFICADOR LOCAL
+===================================================== */
+
+function localPlanner(message) {
+
+  const text = message.trim();
+
+  /*
+    Esto NO pretende fingir ser un LLM.
+
+    Cuando XOD no reconoce un comando,
+    genera una estructura operativa local.
+  */
+
+  return {
+    type: "planner",
+
+    reply:
+`XOD recibió la instrucción:
+
+"${text}"
+
+MODO: ZERO_COST
+
+Análisis local:
+• Instrucción recibida correctamente.
+• Backend XOD operativo.
+• No se utilizó ninguna API de pago.
+• Esta solicitud requiere razonamiento de lenguaje avanzado.
+
+Próximo nivel:
+Conectar un motor IA gratuito o local al núcleo XOD
+sin modificar la interfaz principal.`
+  };
+
+}
+
+
+/* =====================================================
+   CHAT XOD
+===================================================== */
+
+app.post("/xod/chat", async (req, res) => {
+
+  try {
+
+    const message = (
+      req.body.message ||
+      req.body.prompt ||
+      req.body.text ||
+      ""
+    )
+      .toString()
+      .trim();
+
+
+    if (!message) {
+
+      return res.status(400).json({
+        ok: false,
+        agent: "XOD",
+        error: "EMPTY_MESSAGE",
+        reply: "XOD no recibió ninguna instrucción."
+      });
+
+    }
+
+
+    console.log("XOD >", message);
+
+
+    /* MOTOR LOCAL */
+
+    const local = localCommand(message);
+
+    if (local) {
+
+      console.log("XOD LOCAL >", local.type);
+
+      return res.json({
+        ok: true,
+        agent: "XOD",
+        source: "local",
+        mode: "ZERO_COST",
+        type: local.type,
+        reply: local.reply
+      });
+
+    }
+
+
+    /* PLANIFICADOR */
+
+    const plan = localPlanner(message);
+
+    console.log("XOD PLANNER");
+
+
+    return res.json({
+      ok: true,
+      agent: "XOD",
+      source: "local-planner",
+      mode: "ZERO_COST",
+      type: plan.type,
+      reply: plan.reply
+    });
+
+
+  } catch (error) {
+
+    console.error("XOD ERROR:", error);
+
+    return res.status(500).json({
+      ok: false,
+      agent: "XOD",
+      error: "INTERNAL_ERROR",
+      reply: "Error interno del núcleo XOD."
     });
 
   }
-);
 
+});
 
-/* ========================================
-   LOCAL COMMAND ENGINE
-======================================== */
 
-function localCommand(message){
-
-  const text =
-    message.toLowerCase();
-
-
-  if(
-    text.includes(
-      "qué hora"
-    ) ||
-    text.includes(
-      "que hora"
-    )
-  ){
-
-    return (
-      "La hora del servidor es " +
-      new Date()
-      .toLocaleTimeString(
-        "es-AR"
-      )
-    );
-
-  }
-
-
-  if(
-    text.includes(
-      "estado del sistema"
-    )
-  ){
-
-    return (
-      "XOD operativo. " +
-      "Backend conectado."
-    );
-
-  }
-
-
-  return null;
-
-}
-
-
-/* ========================================
-   OPENAI
-======================================== */
-
-async function askAI(message){
-
-  const API_KEY =
-    process.env.OPENAI_API_KEY;
-
-
-  if(!API_KEY){
-
-    return null;
-
-  }
-
-
-  const response =
-    await fetch(
-      "https://api.openai.com/v1/responses",
-      {
-
-        method:"POST",
-
-        headers:{
-
-          "Content-Type":
-            "application/json",
-
-          "Authorization":
-            `Bearer ${API_KEY}`
-
-        },
-
-
-        body:JSON.stringify({
-
-          model:
-            "gpt-5-mini",
-
-          instructions:`
-
-Sos XOD // AGENTE ÉLITE.
-
-Funcionás como núcleo inteligente
-de un asistente personal.
-
-Respondé principalmente en español.
-
-Objetivos:
-
-1. Interpretar la intención del usuario.
-2. Resolver la solicitud.
-3. Dividir problemas complejos.
-4. Proponer acciones concretas.
-5. Detectar información faltante.
-6. Mantener respuestas claras.
-7. Utilizar razonamiento orientado
-   a objetivos.
-8. No afirmar que realizaste
-   acciones externas que realmente
-   no ejecutaste.
-
-Cuando corresponda podés identificarte
-como XOD.
-
-`,
-
-          input:message
-
-        })
-
-      }
-    );
-
-
-  if(!response.ok){
-
-    const error =
-      await response.text();
-
-    console.error(
-      "OPENAI:",
-      error
-    );
-
-    throw new Error(
-      "Error núcleo IA"
-    );
-
-  }
-
-
-  const data =
-    await response.json();
-
-
-  if(data.output_text){
-
-    return data.output_text;
-
-  }
-
-
-  if(
-    Array.isArray(
-      data.output
-    )
-  ){
-
-    for(
-      const item
-      of data.output
-    ){
-
-      if(
-        !Array.isArray(
-          item.content
-        )
-      ){
-        continue;
-      }
-
-
-      for(
-        const content
-        of item.content
-      ){
-
-        if(
-          content.type ===
-          "output_text"
-        ){
-
-          return content.text;
-
-        }
-
-      }
-
-    }
-
-  }
-
-
-  return null;
-
-}
-
-
-/* ========================================
-   XOD CHAT
-======================================== */
-
-app.post(
-  "/xod/chat",
-  async(req,res)=>{
-
-    try{
-
-      const message =
-        (
-          req.body.message ||
-          req.body.prompt ||
-          req.body.text ||
-          ""
-        )
-        .toString()
-        .trim();
-
-
-      if(!message){
-
-        return res
-          .status(400)
-          .json({
-
-            ok:false,
-
-            reply:
-              "XOD no recibió ninguna instrucción."
-
-          });
-
-      }
-
-
-      console.log(
-        "XOD >",
-        message
-      );
-
-
-      /* LOCAL */
-
-      const local =
-        localCommand(
-          message
-        );
-
-
-      if(local){
-
-        return res.json({
-
-          ok:true,
-
-          agent:"XOD",
-
-          source:"local",
-
-          reply:local
-
-        });
-
-      }
-
-
-      /* IA */
-
-      try{
-
-        const ai =
-          await askAI(
-            message
-          );
-
-
-        if(ai){
-
-          return res.json({
-
-            ok:true,
-
-            agent:"XOD",
-
-            source:"openai",
-
-            reply:ai
-
-          });
-
-        }
-
-      }catch(error){
-
-        console.error(
-          error
-        );
-
-      }
-
-
-      /* FALLBACK */
-
-      return res.json({
-
-        ok:true,
-
-        agent:"XOD",
-
-        source:"local",
-
-        reply:
-          "Backend XOD conectado correctamente. " +
-          "El núcleo IA todavía no tiene configurada " +
-          "la variable OPENAI_API_KEY."
-
-      });
-
-
-    }catch(error){
-
-      console.error(
-        error
-      );
-
-
-      return res
-        .status(500)
-        .json({
-
-          ok:false,
-
-          reply:
-            "Error interno del núcleo XOD."
-
-        });
-
-    }
-
-  }
-);
-
-
-/* ========================================
+/* =====================================================
    404
-======================================== */
+===================================================== */
 
-app.use(
-  (req,res)=>{
+app.use((req, res) => {
 
-    res
-      .status(404)
-      .json({
+  res.status(404).json({
+    ok: false,
+    system: SYSTEM.name,
+    error: "Ruta XOD no encontrada"
+  });
 
-        ok:false,
-
-        error:
-          "Ruta XOD no encontrada"
-
-      });
-
-  }
-);
+});
 
 
-/* ========================================
+/* =====================================================
    START
-======================================== */
+===================================================== */
 
-app.listen(
-  PORT,
-  "0.0.0.0",
-  ()=>{
+app.listen(PORT, "0.0.0.0", () => {
 
-    console.log(
-      "=============================="
-    );
+  console.log("================================");
+  console.log("XOD // AGENTE ÉLITE");
+  console.log("BACKEND v4.0");
+  console.log("MODO: ZERO_COST");
+  console.log("STATUS: OPERATIVO");
+  console.log("PORT:", PORT);
+  console.log("ENDPOINT: /xod/chat");
+  console.log("================================");
 
-    console.log(
-      "XOD // AGENTE ÉLITE"
-    );
-
-    console.log(
-      "BACKEND OPERATIVO"
-    );
-
-    console.log(
-      "PORT:",
-      PORT
-    );
-
-    console.log(
-      "ENDPOINT: /xod/chat"
-    );
-
-    console.log(
-      "=============================="
-    );
-
-  }
-);
+});

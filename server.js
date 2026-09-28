@@ -186,12 +186,12 @@ async function askGemini(message) {
 
   /*
     El modelo puede cambiarse mediante Environment:
-    GEMINI_MODEL=gemini-2.5-flash
+    GEMINI_MODEL=gemini-3.5-flash-lite
   */
 
   const MODEL =
     process.env.GEMINI_MODEL ||
-    "gemini-2.5-flash";
+    "gemini-3.5-flash-lite";
 
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(API_KEY)}`;
